@@ -18,13 +18,16 @@ add_action( 'admin_action_bulk_download_image', 'dm_bulk_action_handler' ); // T
 add_action( 'admin_action_-1', 'dm_bulk_action_handler' ); // Bottom dropdown.
 add_action( 'admin_notices', 'dm_admin_notice_error' );
 
+add_action('admin_init', 'dm_settings_init');
+add_action('admin_menu', 'dm_register_settings_page');
 
-function dm_add_download_link_to_media_list_view($actions, $post){  
+
+function dm_add_download_link_to_media_list_view($actions, $post){
   if( ! current_user_can( 'upload_files' ) ) {
     return $actions;
   }
 
-  $actions['download_image'] = dm_generate_link_for_image($post);  
+  $actions['download_image'] = dm_generate_link_for_image($post);
   return $actions;
 }
 
@@ -34,7 +37,7 @@ function dm_add_download_link_to_edit_media_modal_fields_area( $form_fields, $po
   if( ! current_user_can( 'upload_files' ) ) {
     return $form_fields;
   }
-  
+
   $form_fields['download_image'] = array(
     'label'         => '',
     'input'         => 'html',
@@ -70,7 +73,7 @@ function dm_add_bulk_actions_via_javascript() {
   <?php
 }
 
-function dm_bulk_action_handler() {  
+function dm_bulk_action_handler() {
   if (empty( $_REQUEST['action'] ) || empty( $_REQUEST['action2'] ) || ( 'bulk_download_image' != $_REQUEST['action'] && 'bulk_download_image' != $_REQUEST['action2'] ) || empty( $_REQUEST['media'] ) || ! is_array( $_REQUEST['media'] )) {
     return;
   }
@@ -83,16 +86,16 @@ function dm_bulk_action_handler() {
     $errors->add( 'zip_archive_class', __('The ZipArchive PHP Library isn\'t installed.' , 'download-media') );
     dm_displayError( $errors );
   }
-  
+
   $zip = new ZipArchive();
   $zip_path = __DIR__ . DIRECTORY_SEPARATOR . "dm_" . time() . ".zip";
-  
+
   if ( $zip->open( $zip_path, ZipArchive::CREATE ) !== true ) {
     /* translators: %s: Generated name of the zipfile */
     $errors->add( 'open_zip', sprintf( __('Can\'t open the zip file %' , 'download-media'), $zip_path ) );
     dm_displayError( $errors );
   }
-  
+
   foreach($_REQUEST['media'] as $media){
     $title = get_the_title($media);
     $media_path = get_attached_file((int) $media);
@@ -106,6 +109,7 @@ function dm_bulk_action_handler() {
       }else{
         $errors->add( 'is_not_readable', sprintf( __('The file %s isn\'t readable' , 'download-media'), $filename ) );
       }
+    }else{
       $errors->add( 'file_doesnt_exist', sprintf( __('The file %s doesn\'t exist.' , 'download-media'), $filename ) );
     }
   }
@@ -140,7 +144,8 @@ function dm_bulk_action_handler() {
 
 function dm_displayError( $errors ){
   set_transient( 'download_media_error_notice', $errors );
-  exit();
+  wp_safe_redirect( admin_url( 'upload.php' ) );
+  die;
 }
 
 function dm_admin_notice_error() {
@@ -156,4 +161,141 @@ function dm_admin_notice_error() {
     <?php
     endforeach;
   endif;
+}
+
+function dm_register_settings_page() {
+  add_options_page(
+    'Download Media Settings Page',
+    'Download Media',
+    'manage_options',
+    'download-media',
+    'dm_display_download_media_setting_page_callback' );
+}
+
+function dm_scan_for_zip_files($dir){
+  $scan_dm_dir = scandir($dir);
+  return preg_grep ('#^dm_.*\.zip$#', $scan_dm_dir);
+}
+
+function dm_display_download_media_setting_page_callback() {
+  if ( ! current_user_can( 'manage_options' ) ) {
+    return;
+  }
+
+  $current_dir = __DIR__;
+  $found_zips = dm_scan_for_zip_files($current_dir);
+
+  if ((isset($_POST['action']) && $_POST['action'] === 'delete') &&
+    (isset($_POST['_wpnonce']) && wp_verify_nonce($_POST['_wpnonce'], 'delete_zip_files'))) {
+
+      $errors = new WP_Error();
+      foreach($found_zips as $found_zip){
+        $filename = $current_dir . DIRECTORY_SEPARATOR . $found_zip;
+
+        if(file_exists($filename)) {
+          if(is_writable(dirname($filename))) {
+            unlink( $filename );
+          }else{
+            $errors->add( 'is_not_deletable', sprintf( __('The file %s isn\'t deletable' , 'download-media'), $filename ) );
+          }
+        }else{
+          $errors->add( 'file_doesnt_exist', sprintf( __('The file %s doesn\'t exist.' , 'download-media'), $filename ) );
+        }
+      }
+
+      if ( $errors->has_errors() ) {
+        add_settings_error( 'download_media_message', 'download_media_message', $errors->get_error_message(), 'error' );
+      } else {
+        $found_zips = [];
+        add_settings_error( 'download_media_message', 'download_media_message', __( 'Zip files successfully deleted.', 'download-media' ), 'success' );
+      }
+      settings_errors( 'download_media_message' );
+    }
+  ?>
+  <div class="wrap">
+    <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+
+    <form action="<?php echo admin_url( 'options.php'); ?>" method="post">
+    <?php
+      do_settings_sections( 'download-media' );
+      settings_fields( 'download_media_section1' );
+      submit_button( 'Save Settings' );
+    ?>
+    </form>
+
+      <?php $found_zips_count = count($found_zips);
+      if ( $found_zips_count ) : ?><form action="<?php echo admin_url( 'options-general.php?page=download-media'); ?>" method="post"><?php endif; ?>
+        <h2><?php _e( 'Download Media Zip Files Deletion' , 'download-media' ); ?></h2>
+        <p><?php if ( ! $found_zips_count ) :
+          _e( 'There are no zip files to delete.', 'download-media' );
+        else:
+          printf( _n( 'There is %s zip file to delete.',  'There are %s zip files to delete.', $found_zips_count, 'download-media' ), $found_zips_count );
+        endif; ?></p>
+        <?php if ( $found_zips_count ) : ?>
+        <table class="form-table" role="presentation">
+          <tbody>
+            <tr>
+              <th scope="row"><?php _e( 'Delete all the generated zip files now' , 'download-media' ); ?></th>
+              <td><input type="submit" name="submit" id="submit" class="button" value="<?php _e( 'Delete files now' , 'download-media' ); ?>"></td>
+            </tr>
+          </tbody>
+        </table>
+        <input type="hidden" name="action" value="delete">
+        <?php wp_nonce_field('delete_zip_files'); ?>
+      </form>
+      <?php endif; ?>
+  </div>
+<?php
+}
+
+function dm_settings_init()
+{
+    add_settings_section(
+        'download_media_section1',
+        'Download Media Settings',
+        '__return_false',
+        'download-media'
+    );
+
+    add_settings_field(
+        'download_media_should_delete',
+        __('Should the zip files be deleted automatically ?', 'download-media'),
+        'download_media_should_delete_cb',
+        'download-media',
+        'download_media_section1'
+    );
+    register_setting('download_media_section1', 'download_media_should_delete');
+
+    add_settings_field(
+        'download_media_recurrence',
+        __('The zip files should be deleted every:', 'download-media'),
+        'download_media_recurrence_cb',
+        'download-media',
+        'download_media_section1'
+    );
+    register_setting('download_media_section1', 'download_media_recurrence');
+}
+
+function download_media_should_delete_cb(){
+  $setting = get_option('download_media_should_delete', 1);
+  ?>
+  <p>
+    <label><input name="download_media_should_delete" type="radio" value="1" <?php checked((int) $setting, 1); ?>> <?php _e( 'Yes' ); ?></label>
+    <br />
+    <label><input name="download_media_should_delete" type="radio" value="0" <?php checked((int) $setting, 0); ?>> <?php _e( 'No' ); ?></label>
+  </p>
+  <?php
+}
+
+function download_media_recurrence_cb(){
+  $setting = get_option('download_media_recurrence', 'week');
+  ?>
+  <p>
+    <label><input name="download_media_recurrence" type="radio" value="day" <?php checked($setting, 'day'); ?>> <?php _e( 'Day', 'download-image' ); ?></label>
+    <br />
+    <label><input name="download_media_recurrence" type="radio" value="week" <?php checked($setting, 'week'); ?>> <?php _e( 'Week', 'download-image' ); ?></label>
+    <br />
+    <label><input name="download_media_recurrence" type="radio" value="month" <?php checked($setting, 'month'); ?>> <?php _e( 'Month', 'download-image' ); ?></label>
+  </p>
+  <?php
 }
