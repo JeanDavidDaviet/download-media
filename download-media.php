@@ -21,6 +21,16 @@ add_action( 'admin_notices', 'dm_admin_notice_error' );
 add_action('admin_init', 'dm_settings_init');
 add_action('admin_menu', 'dm_register_settings_page');
 
+add_filter( 'update_option_download_media_recurrence', 'update_option_download_media_recurrence', 10, 2 );
+add_filter( 'cron_schedules', 'dm_add_cron_interval' );
+add_action( 'dm_cron_hook', 'dm_cron_exec' );
+
+global $dm_cron_intervals;
+$dm_cron_intervals = array(
+  'dm_daily' => 60 * 60 * 24,
+  'dm_weekly' => 60 * 60 * 24 * 7,
+  'dm_monthly' => 60 * 60 * 24 * 30
+);
 
 function dm_add_download_link_to_media_list_view($actions, $post){
   if( ! current_user_can( 'upload_files' ) ) {
@@ -182,34 +192,16 @@ function dm_display_download_media_setting_page_callback() {
     return;
   }
 
-  $current_dir = __DIR__;
-  $found_zips = dm_scan_for_zip_files($current_dir);
+  $found_zips = dm_get_found_zips();
 
   if ((isset($_POST['action']) && $_POST['action'] === 'delete') &&
     (isset($_POST['_wpnonce']) && wp_verify_nonce($_POST['_wpnonce'], 'delete_zip_files'))) {
 
-      $errors = new WP_Error();
-      foreach($found_zips as $found_zip){
-        $filename = $current_dir . DIRECTORY_SEPARATOR . $found_zip;
-
-        if(file_exists($filename)) {
-          if(is_writable(dirname($filename))) {
-            unlink( $filename );
-          }else{
-            $errors->add( 'is_not_deletable', sprintf( __('The file %s isn\'t deletable' , 'download-media'), $filename ) );
-          }
-        }else{
-          $errors->add( 'file_doesnt_exist', sprintf( __('The file %s doesn\'t exist.' , 'download-media'), $filename ) );
-        }
+      $errors = dm_delete_all_zip_files($found_zips);
+      dm_display_settings_error($errors);
+      if ( ! $errors->has_errors() ) {
+        $found_zips = array();
       }
-
-      if ( $errors->has_errors() ) {
-        add_settings_error( 'download_media_message', 'download_media_message', $errors->get_error_message(), 'error' );
-      } else {
-        $found_zips = [];
-        add_settings_error( 'download_media_message', 'download_media_message', __( 'Zip files successfully deleted.', 'download-media' ), 'success' );
-      }
-      settings_errors( 'download_media_message' );
     }
   ?>
   <div class="wrap">
@@ -288,14 +280,105 @@ function download_media_should_delete_cb(){
 }
 
 function download_media_recurrence_cb(){
-  $setting = get_option('download_media_recurrence', 'week');
+  $setting = get_option('download_media_recurrence', 'dm_weekly');
   ?>
   <p>
-    <label><input name="download_media_recurrence" type="radio" value="day" <?php checked($setting, 'day'); ?>> <?php _e( 'Day', 'download-image' ); ?></label>
+    <label><input name="download_media_recurrence" type="radio" value="dm_daily" <?php checked($setting, 'dm_daily'); ?>> <?php _e( 'Day', 'download-image' ); ?></label>
     <br />
-    <label><input name="download_media_recurrence" type="radio" value="week" <?php checked($setting, 'week'); ?>> <?php _e( 'Week', 'download-image' ); ?></label>
+    <label><input name="download_media_recurrence" type="radio" value="dm_weekly" <?php checked($setting, 'dm_weekly'); ?>> <?php _e( 'Week', 'download-image' ); ?></label>
     <br />
-    <label><input name="download_media_recurrence" type="radio" value="month" <?php checked($setting, 'month'); ?>> <?php _e( 'Month', 'download-image' ); ?></label>
+    <label><input name="download_media_recurrence" type="radio" value="dm_monthly" <?php checked($setting, 'dm_monthly'); ?>> <?php _e( 'Month', 'download-image' ); ?></label>
   </p>
   <?php
+}
+
+function update_option_download_media_recurrence($old, $new){
+  global $dm_cron_intervals;
+  $timestamp = wp_next_scheduled( 'dm_cron_hook' );
+  wp_unschedule_event( $timestamp, 'dm_cron_hook' );
+
+  if ( ! wp_next_scheduled( 'dm_cron_hook' ) ) {
+    wp_schedule_event( time() + $dm_cron_intervals[$new] , $new, 'dm_cron_hook' );
+  }
+}
+
+function dm_get_current_dir(){
+  return __DIR__;
+}
+
+function dm_get_found_zips(){
+  $current_dir = dm_get_current_dir();
+  return dm_scan_for_zip_files($current_dir);
+}
+
+function dm_delete_all_zip_files($found_zips){
+  $errors = new WP_Error();
+  $current_dir = dm_get_current_dir();
+  if ( is_array($found_zips) && count($found_zips) > 0 ) {
+    foreach($found_zips as $found_zip){
+      $filename = $current_dir . DIRECTORY_SEPARATOR . $found_zip;
+
+      if(file_exists($filename)) {
+        if(is_writable(dirname($filename))) {
+          unlink( $filename );
+        }else{
+          $errors->add( 'is_not_deletable', sprintf( __('The file %s isn\'t deletable' , 'download-media'), $filename ) );
+        }
+      }else{
+        $errors->add( 'file_doesnt_exist', sprintf( __('The file %s doesn\'t exist.' , 'download-media'), $filename ) );
+      }
+    }
+  }
+  return $errors;
+}
+
+function dm_display_settings_error(WP_Error $errors){
+  if ( $errors->has_errors() ) {
+    add_settings_error( 'download_media_message', 'download_media_message', $errors->get_error_message(), 'error' );
+  } else {
+    add_settings_error( 'download_media_message', 'download_media_message', __( 'Zip files successfully deleted.', 'download-media' ), 'success' );
+  }
+  settings_errors( 'download_media_message' );
+}
+
+function dm_cron_exec(){
+  $found_zips = dm_get_found_zips();
+  dm_delete_all_zip_files($found_zips);
+}
+
+function dm_add_cron_interval( $schedules ) {
+  global $dm_cron_intervals;
+  $schedules['dm_min'] = array(
+    'interval' => $dm_cron_intervals['dm_min'],
+    'display'  => esc_html__( 'Every Minute' ), 'download-media' );
+  $schedules['dm_daily'] = array(
+    'interval' => $dm_cron_intervals['dm_daily'],
+    'display'  => esc_html__( 'Every Day' ), 'download-media' );
+  $schedules['dm_weekly'] = array(
+      'interval' => $dm_cron_intervals['dm_weekly'],
+      'display'  => esc_html__( 'Every Week' ), 'download-media' );
+  $schedules['dm_monthly'] = array(
+      'interval' => $dm_cron_intervals['dm_monthly'],
+      'display'  => esc_html__( 'Every Month' ), 'download-media' );
+  return $schedules;
+}
+
+register_activation_hook( __FILE__, 'dm_activate' );
+register_deactivation_hook( __FILE__, 'dm_deactivate' );
+
+function dm_activate() {
+  add_option('download_media_should_delete', 1, '', false);
+  add_option('download_media_recurrence', 'dm_weekly', '', false);
+
+  if ( ! wp_next_scheduled( 'dm_cron_hook' ) ) {
+    wp_schedule_event( time(), 'dm_weekly', 'dm_cron_hook' );
+  }
+}
+
+function dm_deactivate() {
+  delete_option('download_media_should_delete');
+  delete_option('download_media_recurrence');
+
+  $timestamp = wp_next_scheduled( 'dm_cron_hook' );
+  wp_unschedule_event( $timestamp, 'dm_cron_hook' );
 }
