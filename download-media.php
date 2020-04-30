@@ -2,11 +2,11 @@
 /*
 Plugin Name: Download Media
 Plugin URI: http://wordpress.org/plugins/download-media/
-Description: Allows images in the media library to be direclty download one by one or in bulk.
+Description: Allows medias in the media library to be direclty download one by one or in bulk.
 Author: Jean-David Daviet
 Version: 1.0
 Author URI: https://jeandaviddaviet.fr
-Text Domain: download-image
+Text Domain: download-media
 */
 
 add_filter( 'media_row_actions', 'dm_add_download_link_to_media_list_view', 10, 2 );
@@ -14,7 +14,7 @@ add_filter( 'attachment_fields_to_edit', 'dm_add_download_link_to_edit_media_mod
 
 // For the bulk action dropdowns.
 add_action( 'admin_head-upload.php', 'dm_add_bulk_actions_via_javascript' );
-add_action( 'admin_action_bulk_download_image', 'dm_bulk_action_handler' ); // Top drowndown.
+add_action( 'admin_action_bulk_download_media', 'dm_bulk_action_handler' ); // Top drowndown.
 add_action( 'admin_action_-1', 'dm_bulk_action_handler' ); // Bottom dropdown.
 add_action( 'admin_notices', 'dm_admin_notice_error' );
 
@@ -37,7 +37,7 @@ function dm_add_download_link_to_media_list_view($actions, $post){
     return $actions;
   }
 
-  $actions['download_image'] = dm_generate_link_for_image($post);
+  $actions['download_media'] = dm_generate_link_for_media($post);
   return $actions;
 }
 
@@ -48,10 +48,10 @@ function dm_add_download_link_to_edit_media_modal_fields_area( $form_fields, $po
     return $form_fields;
   }
 
-  $form_fields['download_image'] = array(
+  $form_fields['download_media'] = array(
     'label'         => '',
     'input'         => 'html',
-    'html'          => dm_generate_link_for_image($post, 'button-secondary button-large'),
+    'html'          => dm_generate_link_for_media($post, 'button-secondary button-large'),
     'show_in_modal' => true,
     'show_in_edit'  => false,
   );
@@ -59,9 +59,9 @@ function dm_add_download_link_to_edit_media_modal_fields_area( $form_fields, $po
 }
 
 
-function dm_generate_link_for_image($post, $class = ''){
+function dm_generate_link_for_media($post, $class = ''){
   $title = apply_filters('the_title', $post->post_title);
-  return '<a download="' . esc_attr( $title ) . '" href="' . esc_attr( wp_get_attachment_image_url( $post->ID, 'full' ) ) . '" title="' . esc_attr( __( 'Download this image', 'download-image' ) ) . '" class="' . $class . '">' . _x( 'Download this image', 'action for a single image', 'download-image' ) . '</a>';
+  return '<a download="' . esc_attr( $title ) . '" href="' . esc_attr( wp_get_attachment_media_url( $post->ID, 'full' ) ) . '" title="' . esc_attr( __( 'Download this media', 'download-media' ) ) . '" class="' . $class . '">' . _x( 'Download this media', 'action for a single media', 'download-media' ) . '</a>';
 }
 
 
@@ -75,8 +75,8 @@ function dm_add_bulk_actions_via_javascript() {
     jQuery(document).ready(function ($) {
       $('select[name^="action"] option:last-child').before(
         $('<option/>')
-          .attr('value', 'bulk_download_image')
-          .text('<?php echo esc_js( _x( 'Download the selected images', 'bulk actions dropdown', 'download-image' ) ); ?>')
+          .attr('value', 'bulk_download_media')
+          .text('<?php echo esc_js( _x( 'Download the selected medias', 'bulk actions dropdown', 'download-media' ) ); ?>')
       );
     });
   </script>
@@ -84,7 +84,7 @@ function dm_add_bulk_actions_via_javascript() {
 }
 
 function dm_bulk_action_handler() {
-  if (empty( $_REQUEST['action'] ) || empty( $_REQUEST['action2'] ) || ( 'bulk_download_image' != $_REQUEST['action'] && 'bulk_download_image' != $_REQUEST['action2'] ) || empty( $_REQUEST['media'] ) || ! is_array( $_REQUEST['media'] )) {
+  if (empty( $_REQUEST['action'] ) || empty( $_REQUEST['action2'] ) || ( 'bulk_download_media' != $_REQUEST['action'] && 'bulk_download_media' != $_REQUEST['action2'] ) || empty( $_REQUEST['media'] ) || ! is_array( $_REQUEST['media'] )) {
     return;
   }
 
@@ -283,11 +283,11 @@ function download_media_recurrence_cb(){
   $setting = get_option('download_media_recurrence', 'dm_weekly');
   ?>
   <p>
-    <label><input name="download_media_recurrence" type="radio" value="dm_daily" <?php checked($setting, 'dm_daily'); ?>> <?php _e( 'Day', 'download-image' ); ?></label>
+    <label><input name="download_media_recurrence" type="radio" value="dm_daily" <?php checked($setting, 'dm_daily'); ?>> <?php _e( 'Day', 'download-media' ); ?></label>
     <br />
-    <label><input name="download_media_recurrence" type="radio" value="dm_weekly" <?php checked($setting, 'dm_weekly'); ?>> <?php _e( 'Week', 'download-image' ); ?></label>
+    <label><input name="download_media_recurrence" type="radio" value="dm_weekly" <?php checked($setting, 'dm_weekly'); ?>> <?php _e( 'Week', 'download-media' ); ?></label>
     <br />
-    <label><input name="download_media_recurrence" type="radio" value="dm_monthly" <?php checked($setting, 'dm_monthly'); ?>> <?php _e( 'Month', 'download-image' ); ?></label>
+    <label><input name="download_media_recurrence" type="radio" value="dm_monthly" <?php checked($setting, 'dm_monthly'); ?>> <?php _e( 'Month', 'download-media' ); ?></label>
   </p>
   <?php
 }
