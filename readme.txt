@@ -32,6 +32,11 @@ The source code for this plugin is available on [GitHub](https://github.com/Jean
 
 == ChangeLog ==
 
+= Version 1.1 =
+
+* use DownloadMedia class for plugin containerisation
+* fix should delete option not updating cron job
+
 = Version 1.0.0 =
 
 * Initial release.
