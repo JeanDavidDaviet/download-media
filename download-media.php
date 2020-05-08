@@ -24,7 +24,7 @@ class DownloadMedia {
    *
    * @var string
    */
-  public $version = '1.1.1';
+  public $version = '1.1';
 
   /**
    * This plugin's prefix
@@ -370,7 +370,7 @@ class DownloadMedia {
     $timestamp = wp_next_scheduled( $this->cron_hook_name );
     wp_unschedule_event( $timestamp, $this->cron_hook_name );
 
-    $download_media_recurrence = isset($_POST['download_media_recurrence']) ? $_POST['download_media_recurrence'] : 1;
+    $download_media_recurrence = isset($_POST['download_media_recurrence']) ? sanitize_text_field($_POST['download_media_recurrence']) : 1;
 
     if( (int) get_option('download_media_should_delete') ) {
       if ( ! wp_next_scheduled( $this->cron_hook_name )  ) {
