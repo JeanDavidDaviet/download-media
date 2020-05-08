@@ -32,6 +32,11 @@ The source code for this plugin is available on [GitHub](https://github.com/Jean
 
 == ChangeLog ==
 
+= Version 1.2 =
+
+* Add Grid UI media download
+* Refactor classes
+
 = Version 1.1 =
 
 * use DownloadMedia class for plugin containerisation
