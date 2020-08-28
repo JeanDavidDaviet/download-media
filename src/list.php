@@ -99,7 +99,7 @@ class DownloadMedia_List {
 
     if ( $zip->open( $zip_path, ZipArchive::CREATE ) !== true ) {
       /* translators: %s: Generated name of the zipfile */
-      $errors->add( 'open_zip', sprintf( __('Can\'t open the zip file %' , 'download-media'), $zip_path ) );
+      $errors->add( 'open_zip', sprintf( __('Can\'t open the zip file %s.' , 'download-media'), $zip_path ) );
       $this->display_bulk_error( $errors );
     }
 
@@ -114,7 +114,7 @@ class DownloadMedia_List {
         if(is_readable($media_path)) {
           $zip->addFile($media_path, $filename);
         }else{
-          $errors->add( 'is_not_readable', sprintf( __('The file %s isn\'t readable' , 'download-media'), $filename ) );
+          $errors->add( 'is_not_readable', sprintf( __('The file %s isn\'t readable.' , 'download-media'), $filename ) );
         }
       }else{
         $errors->add( 'file_doesnt_exist', sprintf( __('The file %s doesn\'t exist.' , 'download-media'), $filename ) );
