@@ -4,7 +4,7 @@ Plugin Name: Download Media
 Plugin URI: https://wordpress.org/plugins/download-media/
 Description: Allows medias in the media library to be direclty download one by one or in bulk.
 Author: Jean-David Daviet
-Version: 1.2.1
+Version: 1.3
 Author URI: https://jeandaviddaviet.fr
 Text Domain: download-media
 */
@@ -27,7 +27,7 @@ class DownloadMedia {
    *
    * @var string
    */
-  public $version = '1.2.1';
+  public $version = '1.3';
 
   /**
    * This plugin's prefix
@@ -67,9 +67,10 @@ class DownloadMedia {
     $this->capability_settings = apply_filters( 'download_media_settings_cap', $this->capability_settings );
 
     // Set the duration of the intervals in seconds
-    $this->cron_intervals[$this->prefix . 'daily'] = apply_filters( 'download_media_cron_daily_second', 60 * 60 * 24 );
-    $this->cron_intervals[$this->prefix . 'weekly'] = apply_filters( 'download_media_cron_weekly_second', 60 * 60 * 24 * 7 );
-    $this->cron_intervals[$this->prefix . 'monthly'] = apply_filters( 'download_media_cron_monthly_second', 60 * 60 * 24 * 30 );
+    $this->cron_intervals[$this->prefix . 'daily'] = apply_filters( 'download_media_cron_daily_second', array( 'interval' => 60 * 60 * 24, 'display' => esc_html__('Day', 'download-media') ) );
+    $this->cron_intervals[$this->prefix . 'weekly'] = apply_filters( 'download_media_cron_weekly_second', array( 'interval' => 60 * 60 * 24 * 7, 'display' => esc_html__('Week', 'download-media') ) );
+    $this->cron_intervals[$this->prefix . 'monthly'] = apply_filters( 'download_media_cron_monthly_second', array( 'interval' => 60 * 60 * 24 * 30, 'display' => esc_html__('Month', 'download-media') ) );
+    $this->cron_intervals = apply_filters( 'download_media_cron_intervals', $this->cron_intervals );
 
     add_action('admin_init', array( $this, 'settings_init' ) );
     add_action('admin_menu', array( $this, 'register_settings_page' ) );
@@ -188,15 +189,14 @@ class DownloadMedia {
 
   public function recurrence_cb(){
     $setting = get_option('download_media_recurrence', $this->prefix . 'weekly');
+    foreach($this->cron_intervals as $key_interval => $interval):
+      $display = $interval['display'];
     ?>
     <p>
-      <label><input name="download_media_recurrence" type="radio" value="<?php echo $this->prefix; ?>daily" <?php checked($setting, $this->prefix . 'daily'); ?>> <?php _e( 'Day', 'download-media' ); ?></label>
-      <br />
-      <label><input name="download_media_recurrence" type="radio" value="<?php echo $this->prefix; ?>weekly" <?php checked($setting, $this->prefix . 'weekly'); ?>> <?php _e( 'Week', 'download-media' ); ?></label>
-      <br />
-      <label><input name="download_media_recurrence" type="radio" value="<?php echo $this->prefix; ?>monthly" <?php checked($setting, $this->prefix . 'monthly'); ?>> <?php _e( 'Month', 'download-media' ); ?></label>
+      <label><input name="download_media_recurrence" type="radio" value="<?php echo $key_interval; ?>" <?php checked($setting, $key_interval); ?>> <?php echo $display; ?></label>
     </p>
     <?php
+    endforeach;
   }
 
   public function update_option_download_media_recurrence($old, $new){
@@ -208,7 +208,7 @@ class DownloadMedia {
     }
 
     if ( ! wp_next_scheduled( $this->cron_hook_name ) ) {
-      wp_schedule_event( time() + $this->cron_intervals[$new] , $new, $this->cron_hook_name );
+      wp_schedule_event( time() + $this->cron_intervals[$new]['interval'] , $new, $this->cron_hook_name );
     }
   }
 
@@ -220,13 +220,14 @@ class DownloadMedia {
 
     if( (int) get_option('download_media_should_delete') ) {
       if ( ! wp_next_scheduled( $this->cron_hook_name )  ) {
-        wp_schedule_event( time() + $this->cron_intervals[$download_media_recurrence] , $download_media_recurrence, $this->cron_hook_name );
+        wp_schedule_event( time() + $this->cron_intervals[$download_media_recurrence]['interval'] , $download_media_recurrence, $this->cron_hook_name );
       }
     }
   }
 
   public function get_current_dir(){
-    return __DIR__;
+    $directory = apply_filters( 'download_media_zip_directory', __DIR__ );
+    return $directory;
   }
 
   public function get_found_zips(){
@@ -270,15 +271,7 @@ class DownloadMedia {
   }
 
   public function add_cron_interval( $schedules ) {
-      $schedules[$this->prefix . 'daily'] = array(
-        'interval' => $this->cron_intervals[$this->prefix . 'daily'],
-        'display'  => esc_html__( 'Every Day' ), 'download-media' );
-    $schedules[$this->prefix . 'weekly'] = array(
-        'interval' => $this->cron_intervals[$this->prefix . 'weekly'],
-        'display'  => esc_html__( 'Every Week' ), 'download-media' );
-    $schedules[$this->prefix . 'monthly'] = array(
-        'interval' => $this->cron_intervals[$this->prefix . 'monthly'],
-        'display'  => esc_html__( 'Every Month' ), 'download-media' );
+    $schedules = array_merge($schedules, $this->cron_intervals);
     return $schedules;
   }
 

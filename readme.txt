@@ -4,7 +4,7 @@ Tags: media, image, download, library, post thumbnails
 Requires at least: 4.7
 Tested up to: 5.5
 Requires PHP: 5.2.4
-Stable tag: 1.2.1
+Stable tag: 1.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -22,6 +22,17 @@ Support for this plugin is provided via the [WordPress.org forums](https://wordp
 
 The source code for this plugin is available on [GitHub](https://github.com/JeanDavidDaviet/download-media).
 
+== List of hook available ==
+
+**Filters**
+
+* *download_media_settings_cap* - Set default capability for plugin's settings modifications
+* *download_media_cron_intervals* - Allow the modification of the plugin's cron intervals
+* *download_media_cron_daily_second* - Allow the modification of the daily cron interval of time
+* *download_media_cron_weekly_second* - Allow the modification of the weekly cron interval of time
+* *download_media_cron_montly_second* - Allow the modification of the monthly cron interval of time
+* *download_media_zip_directory* - Set default zip files directory location
+
 == Installation ==
 
 1. Go to your admin area and select Plugins → Add New from the menu.
@@ -30,18 +41,27 @@ The source code for this plugin is available on [GitHub](https://github.com/Jean
 4. Click activate.
 5. Navigate to Media → Library
 
+== Screenshots ==
+
+1. List view - Link to download under each image
+2. List view - Bulk download
+3. Grid view - Link to download over each image (on hover)
+4. Media preview popup - Button to download on bottom
+5. Plugin settings
+
 == ChangeLog ==
 
-= Version 1.2 =
+= Version 1.3 =
+* Add filter hooks
+* Add plugin screenshots
 
+= Version 1.2 =
 * Add Grid UI media download
 * Refactor classes
 
 = Version 1.1 =
-
 * use DownloadMedia class for plugin containerisation
 * fix should delete option not updating cron job
 
 = Version 1.0.0 =
-
 * Initial release.
