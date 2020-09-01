@@ -25,6 +25,7 @@ class DownloadMedia_List {
 
     add_filter( 'media_row_actions', array( $this, 'add_download_link_to_media_list_view' ), 10, 2 );
     add_filter( 'attachment_fields_to_edit', array( $this, 'add_download_link_to_edit_media_modal_fields_area' ), 10, 2 );
+    add_action( 'attachment_submitbox_misc_actions', array( $this, 'add_download_link_to_media_list_edit' ), 90 );
 
     // For the bulk action dropdowns.
     add_action( 'admin_head-upload.php', array( $this, 'add_bulk_actions_via_javascript' ) );
@@ -40,6 +41,16 @@ class DownloadMedia_List {
 
     $actions['download_media'] = $this->generate_link_for_media($post);
     return $actions;
+  }
+
+  public function add_download_link_to_media_list_edit($post){
+    if( ! current_user_can( $this->capability_download ) ) {
+      return;
+    }
+
+    echo '<div class="misc-pub-section misc-pub-regenerate-thumbnails">';
+		echo $this->generate_link_for_media($post, 'button-secondary button-large');
+		echo '</div>';
   }
 
   public function add_download_link_to_edit_media_modal_fields_area( $form_fields, $post ) {
