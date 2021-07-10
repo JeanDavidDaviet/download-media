@@ -15,7 +15,7 @@ class DownloadMedia_Grid {
    *
    * @var string
    */
-  public $version = '1.2';
+  public $version = '1.3.2';
 
   /**
    * The capability required to download a media.

@@ -98,17 +98,17 @@ class DownloadMedia_List {
 
     check_admin_referer( 'bulk-media' );
 
-    $errors = new WP_Error();
+    $errors = new \WP_Error();
 
     if( class_exists('ZipArchive') ){
       $errors->add( 'zip_archive_class', __('The ZipArchive PHP Library isn\'t installed.' , 'download-media') );
       $this->display_bulk_error( $errors );
     }
 
-    $zip = new ZipArchive();
+    $zip = new \ZipArchive();
     $zip_path = __DIR__ . DIRECTORY_SEPARATOR . $this->prefix . time() . ".zip";
 
-    if ( $zip->open( $zip_path, ZipArchive::CREATE ) !== true ) {
+    if ( $zip->open( $zip_path, \ZipArchive::CREATE ) !== true ) {
       /* translators: %s: Generated name of the zipfile */
       $errors->add( 'open_zip', sprintf( __('Can\'t open the zip file %s.' , 'download-media'), $zip_path ) );
       $this->display_bulk_error( $errors );

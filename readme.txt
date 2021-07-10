@@ -2,9 +2,9 @@
 Contributors: jean-david
 Tags: media, image, download, library, post thumbnails
 Requires at least: 4.7
-Tested up to: 5.5
+Tested up to: 5.8
 Requires PHP: 5.2.4
-Stable tag: 1.3.1
+Stable tag: 1.3.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -50,6 +50,12 @@ The source code for this plugin is available on [GitHub](https://github.com/Jean
 5. Plugin settings
 
 == ChangeLog ==
+
+= Version 1.3.2 =
+* Fix namespace issue causing fatal error when using the bulk downloader
+
+= Version 1.3.1 =
+* Add a download link in the edit attachment postmeta box
 
 = Version 1.3 =
 * Add filter hooks

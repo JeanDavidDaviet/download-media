@@ -4,7 +4,7 @@ Plugin Name: Download Media
 Plugin URI: https://wordpress.org/plugins/download-media/
 Description: Allows medias in the media library to be direclty download one by one or in bulk.
 Author: Jean-David Daviet
-Version: 1.3.1
+Version: 1.3.2
 Author URI: https://jeandaviddaviet.fr
 Text Domain: download-media
 */
@@ -27,7 +27,7 @@ class DownloadMedia {
    *
    * @var string
    */
-  public $version = '1.3.1';
+  public $version = '1.3.2';
 
   /**
    * This plugin's prefix
@@ -236,7 +236,7 @@ class DownloadMedia {
   }
 
   public function delete_all_zip_files($found_zips){
-    $errors = new WP_Error();
+    $errors = new \WP_Error();
     $current_dir = $this->get_current_dir();
     if ( is_array($found_zips) && count($found_zips) > 0 ) {
       foreach($found_zips as $found_zip){
@@ -256,7 +256,7 @@ class DownloadMedia {
     return $errors;
   }
 
-  public function display_settings_error(WP_Error $errors){
+  public function display_settings_error(\WP_Error $errors){
     if ( $errors->has_errors() ) {
       add_settings_error( 'download_media_message', 'download_media_message', $errors->get_error_message(), 'error' );
     } else {
