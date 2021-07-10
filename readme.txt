@@ -4,7 +4,7 @@ Tags: media, image, download, library, post thumbnails
 Requires at least: 4.7
 Tested up to: 5.8
 Requires PHP: 5.2.4
-Stable tag: 1.3.2
+Stable tag: 1.3.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -50,6 +50,9 @@ The source code for this plugin is available on [GitHub](https://github.com/Jean
 5. Plugin settings
 
 == ChangeLog ==
+
+= Version 1.3.3 =
+* Fix a typo leading PHP to think the ZipArchive class wasn't installed
 
 = Version 1.3.2 =
 * Fix namespace issue causing fatal error when using the bulk downloader

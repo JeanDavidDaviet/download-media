@@ -100,7 +100,7 @@ class DownloadMedia_List {
 
     $errors = new \WP_Error();
 
-    if( class_exists('ZipArchive') ){
+    if( ! class_exists('ZipArchive') ){
       $errors->add( 'zip_archive_class', __('The ZipArchive PHP Library isn\'t installed.' , 'download-media') );
       $this->display_bulk_error( $errors );
     }
